@@ -74,8 +74,7 @@ const Index = () => {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white/10"
+              className="bg-mint-600 text-white hover:bg-mint-700 border-2 border-mint-400 shadow-lg transition-all duration-300"
             >
               Узнать цены
             </Button>
