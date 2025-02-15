@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Phone, Mail, MapPin, Image, Send, CleaningServices } from 'lucide-react';
+import { Phone, Mail, MapPin, Image, Send, Sparkles } from 'lucide-react';
 
 const services = [
   { name: "Химчистка дивана", price: "от 2000₽", time: "2-3 часа" },
@@ -39,7 +38,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
-              <CleaningServices className="w-6 h-6 text-mint-600" />
+              <Sparkles className="w-6 h-6 text-mint-600" />
               <span className="font-display text-xl font-semibold text-mint-800">Clean Pro</span>
             </div>
             <nav className="hidden md:flex space-x-8">
