@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,7 @@ interface Contact {
 
 interface Work {
   id: string;
-  imageUrl: string;
+  image_url: string;
   description: string;
 }
 
@@ -38,7 +37,6 @@ const Admin = () => {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newService, setNewService] = useState<Omit<Service, 'id'>>({ name: "", price: "", time: "" });
 
-  // Fetch services
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
@@ -52,7 +50,6 @@ const Admin = () => {
     }
   });
 
-  // Fetch contacts
   const { data: contactsData } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
@@ -66,7 +63,6 @@ const Admin = () => {
     }
   });
 
-  // Fetch portfolio works
   const { data: works = [] } = useQuery({
     queryKey: ['portfolio'],
     queryFn: async () => {
@@ -80,7 +76,6 @@ const Admin = () => {
     }
   });
 
-  // Mutations
   const updateService = useMutation({
     mutationFn: async (service: Service) => {
       const { error } = await supabase
@@ -221,7 +216,6 @@ const Admin = () => {
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-white mb-4">Управление услугами</h2>
                 
-                {/* Список существующих услуг */}
                 <div className="space-y-4">
                   {services.map((service) => (
                     <div key={service.id} className="flex items-center gap-4 p-4 bg-[#1A1F2C] rounded-lg">
@@ -272,7 +266,6 @@ const Admin = () => {
                   ))}
                 </div>
 
-                {/* Форма добавления новой услуги */}
                 <div className="mt-6 p-4 bg-[#1A1F2C] rounded-lg">
                   <h3 className="text-lg font-semibold text-white mb-4">Добавить новую услугу</h3>
                   <div className="grid grid-cols-3 gap-4">
@@ -313,7 +306,14 @@ const Admin = () => {
                     <label className="block text-sm font-medium text-[#D4B996] mb-2">Телефон</label>
                     <Input
                       value={contactsData.phone}
-                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, phone: e.target.value })}
+                      onChange={(e) => {
+                        if (contactsData) {
+                          queryClient.setQueryData(['contacts'], {
+                            ...contactsData,
+                            phone: e.target.value
+                          });
+                        }
+                      }}
                       className="bg-[#1A1F2C] text-white"
                     />
                   </div>
@@ -321,7 +321,14 @@ const Admin = () => {
                     <label className="block text-sm font-medium text-[#D4B996] mb-2">Email</label>
                     <Input
                       value={contactsData.email}
-                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, email: e.target.value })}
+                      onChange={(e) => {
+                        if (contactsData) {
+                          queryClient.setQueryData(['contacts'], {
+                            ...contactsData,
+                            email: e.target.value
+                          });
+                        }
+                      }}
                       className="bg-[#1A1F2C] text-white"
                     />
                   </div>
@@ -329,7 +336,14 @@ const Admin = () => {
                     <label className="block text-sm font-medium text-[#D4B996] mb-2">Адрес</label>
                     <Input
                       value={contactsData.address}
-                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, address: e.target.value })}
+                      onChange={(e) => {
+                        if (contactsData) {
+                          queryClient.setQueryData(['contacts'], {
+                            ...contactsData,
+                            address: e.target.value
+                          });
+                        }
+                      }}
                       className="bg-[#1A1F2C] text-white"
                     />
                   </div>
@@ -349,7 +363,7 @@ const Admin = () => {
                 {works.map((work) => (
                   <div key={work.id} className="relative group">
                     <div className="aspect-square bg-[#1A1F2C] rounded-lg overflow-hidden">
-                      <img src={work.imageUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={work.image_url} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button variant="ghost" className="text-white">
