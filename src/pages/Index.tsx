@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Phone, Mail, MapPin, Image, Send, Sparkles } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
 
 const services = [
   { name: "Химчистка дивана", price: "от 2000₽", time: "2-3 часа" },
@@ -21,6 +22,32 @@ const Index = () => {
     phone: '',
     email: '',
     message: ''
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: works = [] } = useQuery({
+    queryKey: ['portfolio'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('portfolio')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,8 +117,8 @@ const Index = () => {
             Наши услуги
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {services.map((service, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow duration-300 bg-[#2A2F3C] border-[#8B7355]/20">
+            {services.map((service) => (
+              <Card key={service.id} className="p-6 hover:shadow-lg transition-shadow duration-300 bg-[#2A2F3C] border-[#8B7355]/20">
                 <h3 className="font-display text-xl font-semibold mb-3 text-white">{service.name}</h3>
                 <div className="text-[#D4B996]">
                   <p className="mb-2">Стоимость: {service.price}</p>
@@ -110,11 +137,14 @@ const Index = () => {
             Примеры работ
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((_, index) => (
-              <Card key={index} className="overflow-hidden group border-[#8B7355]/20 bg-[#2A2F3C]">
-                <div className="relative aspect-square bg-[#2A2F3C] flex items-center justify-center">
-                  <Image className="w-12 h-12 text-[#D4B996]" />
-                  <span className="absolute inset-0 bg-[#8B7355]/0 group-hover:bg-[#8B7355]/10 transition-colors duration-300" />
+            {works.map((work) => (
+              <Card key={work.id} className="overflow-hidden group border-[#8B7355]/20 bg-[#2A2F3C]">
+                <div className="relative aspect-square bg-[#2A2F3C]">
+                  <img 
+                    src={work.image_url} 
+                    alt={work.description || 'Пример работы'} 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </Card>
             ))}

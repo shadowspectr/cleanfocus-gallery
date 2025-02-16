@@ -148,6 +148,92 @@ const Admin = () => {
     }
   });
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    if (!['jpg', 'jpeg', 'png', 'svg'].includes(fileExt || '')) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, загрузите изображение в формате JPG, PNG или SVG",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('portfolio')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portfolio')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from('portfolio')
+        .insert([{
+          image_url: publicUrl,
+          description: ''
+        }]);
+
+      if (dbError) throw dbError;
+
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+
+      toast({
+        title: "Успешно",
+        description: "Изображение добавлено в портфолио",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить изображение",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteWork = async (id: string, image_url: string) => {
+    try {
+      const fileName = image_url.split('/').pop();
+      
+      if (fileName) {
+        const { error: storageError } = await supabase.storage
+          .from('portfolio')
+          .remove([fileName]);
+
+        if (storageError) throw storageError;
+      }
+
+      const { error: dbError } = await supabase
+        .from('portfolio')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+
+      toast({
+        title: "Успешно",
+        description: "Работа удалена из портфолио",
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить работу",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     const checkAuth = () => {
       const isAuth = localStorage.getItem('adminAuth');
@@ -366,18 +452,25 @@ const Admin = () => {
                       <img src={work.image_url} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button variant="ghost" className="text-white">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" className="text-white">
+                      <Button
+                        onClick={() => handleDeleteWork(work.id, work.image_url)}
+                        variant="ghost"
+                        className="text-white hover:bg-red-500/20"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 ))}
-                <div className="aspect-square bg-[#1A1F2C] rounded-lg flex items-center justify-center border-2 border-dashed border-[#8B7355]/20 cursor-pointer hover:border-[#D4B996]/40 transition-colors">
+                <label className="aspect-square bg-[#1A1F2C] rounded-lg flex items-center justify-center border-2 border-dashed border-[#8B7355]/20 cursor-pointer hover:border-[#D4B996]/40 transition-colors">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.svg"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
                   <Plus className="w-8 h-8 text-[#D4B996]" />
-                </div>
+                </label>
               </div>
             </Card>
           </TabsContent>
