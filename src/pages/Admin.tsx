@@ -8,21 +8,25 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Edit, Plus, Save, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Service {
+  id: string;
   name: string;
   price: string;
   time: string;
 }
 
 interface Contact {
+  id: string;
   phone: string;
   email: string;
   address: string;
 }
 
 interface Work {
-  id: number;
+  id: string;
   imageUrl: string;
   description: string;
 }
@@ -30,20 +34,124 @@ interface Work {
 const Admin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [services, setServices] = useState<Service[]>([
-    { name: "Химчистка дивана", price: "от 2000₽", time: "2-3 часа" },
-    { name: "Химчистка кресла", price: "от 1000₽", time: "1-2 часа" },
-    { name: "Химчистка матраса", price: "от 2000₽", time: "2-3 часа" },
-    { name: "Химчистка ковра", price: "от 150₽/м²", time: "2-4 часа" },
-  ]);
-  const [contacts, setContacts] = useState<Contact>({
-    phone: "+7 (XXX) XXX-XX-XX",
-    email: "info@example.com",
-    address: "Ваш город",
-  });
-  const [works, setWorks] = useState<Work[]>([]);
+  const queryClient = useQueryClient();
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [newService, setNewService] = useState<Service>({ name: "", price: "", time: "" });
+  const [newService, setNewService] = useState<Omit<Service, 'id'>>({ name: "", price: "", time: "" });
+
+  // Fetch services
+  const { data: services = [] } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch contacts
+  const { data: contactsData } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch portfolio works
+  const { data: works = [] } = useQuery({
+    queryKey: ['portfolio'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('portfolio')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Mutations
+  const updateService = useMutation({
+    mutationFn: async (service: Service) => {
+      const { error } = await supabase
+        .from('services')
+        .update({ name: service.name, price: service.price, time: service.time })
+        .eq('id', service.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast({
+        title: "Услуга обновлена",
+        description: "Изменения успешно сохранены",
+      });
+    }
+  });
+
+  const deleteService = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast({
+        title: "Услуга удалена",
+        description: "Услуга успешно удалена из списка",
+      });
+    }
+  });
+
+  const addService = useMutation({
+    mutationFn: async (service: Omit<Service, 'id'>) => {
+      const { error } = await supabase
+        .from('services')
+        .insert([service]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setNewService({ name: "", price: "", time: "" });
+      toast({
+        title: "Услуга добавлена",
+        description: "Новая услуга успешно добавлена",
+      });
+    }
+  });
+
+  const updateContacts = useMutation({
+    mutationFn: async (contacts: Omit<Contact, 'id' | 'created_at'>) => {
+      const { error } = await supabase
+        .from('contacts')
+        .update(contacts)
+        .eq('id', contactsData?.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast({
+        title: "Контакты обновлены",
+        description: "Изменения успешно сохранены",
+      });
+    }
+  });
 
   useEffect(() => {
     const checkAuth = () => {
@@ -65,43 +173,29 @@ const Admin = () => {
     navigate('/');
   };
 
-  const handleSaveService = (service: Service, index: number) => {
-    const newServices = [...services];
-    newServices[index] = service;
-    setServices(newServices);
+  const handleSaveService = (service: Service) => {
+    updateService.mutate(service);
     setEditingService(null);
-    toast({
-      title: "Услуга обновлена",
-      description: "Изменения успешно сохранены",
-    });
   };
 
   const handleAddService = () => {
     if (newService.name && newService.price && newService.time) {
-      setServices([...services, newService]);
-      setNewService({ name: "", price: "", time: "" });
-      toast({
-        title: "Услуга добавлена",
-        description: "Новая услуга успешно добавлена",
-      });
+      addService.mutate(newService);
     }
   };
 
-  const handleDeleteService = (index: number) => {
-    const newServices = services.filter((_, i) => i !== index);
-    setServices(newServices);
-    toast({
-      title: "Услуга удалена",
-      description: "Услуга успешно удалена из списка",
-    });
+  const handleDeleteService = (id: string) => {
+    deleteService.mutate(id);
   };
 
   const handleSaveContacts = () => {
-    setContacts({ ...contacts });
-    toast({
-      title: "Контакты обновлены",
-      description: "Изменения успешно сохранены",
-    });
+    if (contactsData) {
+      updateContacts.mutate({
+        phone: contactsData.phone,
+        email: contactsData.email,
+        address: contactsData.address
+      });
+    }
   };
 
   return (
@@ -129,31 +223,31 @@ const Admin = () => {
                 
                 {/* Список существующих услуг */}
                 <div className="space-y-4">
-                  {services.map((service, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 bg-[#1A1F2C] rounded-lg">
-                      {editingService === service ? (
+                  {services.map((service) => (
+                    <div key={service.id} className="flex items-center gap-4 p-4 bg-[#1A1F2C] rounded-lg">
+                      {editingService?.id === service.id ? (
                         <>
                           <div className="flex-1 grid grid-cols-3 gap-4">
                             <Input
-                              value={service.name}
-                              onChange={(e) => setEditingService({ ...service, name: e.target.value })}
+                              value={editingService.name}
+                              onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
                               className="bg-[#2A2F3C] text-white"
                               placeholder="Название услуги"
                             />
                             <Input
-                              value={service.price}
-                              onChange={(e) => setEditingService({ ...service, price: e.target.value })}
+                              value={editingService.price}
+                              onChange={(e) => setEditingService({ ...editingService, price: e.target.value })}
                               className="bg-[#2A2F3C] text-white"
                               placeholder="Стоимость"
                             />
                             <Input
-                              value={service.time}
-                              onChange={(e) => setEditingService({ ...service, time: e.target.value })}
+                              value={editingService.time}
+                              onChange={(e) => setEditingService({ ...editingService, time: e.target.value })}
                               className="bg-[#2A2F3C] text-white"
                               placeholder="Время выполнения"
                             />
                           </div>
-                          <Button onClick={() => handleSaveService(service, index)} className="bg-[#8B7355] hover:bg-[#A08B6C]">
+                          <Button onClick={() => handleSaveService(editingService)} className="bg-[#8B7355] hover:bg-[#A08B6C]">
                             <Save className="w-4 h-4" />
                           </Button>
                         </>
@@ -168,7 +262,7 @@ const Admin = () => {
                             <Button onClick={() => setEditingService(service)} variant="ghost" className="text-[#D4B996] hover:text-white">
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button onClick={() => handleDeleteService(index)} variant="ghost" className="text-[#D4B996] hover:text-white">
+                            <Button onClick={() => handleDeleteService(service.id)} variant="ghost" className="text-[#D4B996] hover:text-white">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -213,36 +307,38 @@ const Admin = () => {
           <TabsContent value="contacts">
             <Card className="p-6 bg-[#2A2F3C] border-[#8B7355]/20">
               <h2 className="text-xl font-semibold text-white mb-4">Управление контактами</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#D4B996] mb-2">Телефон</label>
-                  <Input
-                    value={contacts.phone}
-                    onChange={(e) => setContacts({ ...contacts, phone: e.target.value })}
-                    className="bg-[#1A1F2C] text-white"
-                  />
+              {contactsData && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#D4B996] mb-2">Телефон</label>
+                    <Input
+                      value={contactsData.phone}
+                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, phone: e.target.value })}
+                      className="bg-[#1A1F2C] text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#D4B996] mb-2">Email</label>
+                    <Input
+                      value={contactsData.email}
+                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, email: e.target.value })}
+                      className="bg-[#1A1F2C] text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#D4B996] mb-2">Адрес</label>
+                    <Input
+                      value={contactsData.address}
+                      onChange={(e) => queryClient.setQueryData(['contacts'], { ...contactsData, address: e.target.value })}
+                      className="bg-[#1A1F2C] text-white"
+                    />
+                  </div>
+                  <Button onClick={handleSaveContacts} className="bg-[#8B7355] hover:bg-[#A08B6C]">
+                    <Save className="w-4 h-4 mr-2" />
+                    Сохранить изменения
+                  </Button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#D4B996] mb-2">Email</label>
-                  <Input
-                    value={contacts.email}
-                    onChange={(e) => setContacts({ ...contacts, email: e.target.value })}
-                    className="bg-[#1A1F2C] text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#D4B996] mb-2">Адрес</label>
-                  <Input
-                    value={contacts.address}
-                    onChange={(e) => setContacts({ ...contacts, address: e.target.value })}
-                    className="bg-[#1A1F2C] text-white"
-                  />
-                </div>
-                <Button onClick={handleSaveContacts} className="bg-[#8B7355] hover:bg-[#A08B6C]">
-                  <Save className="w-4 h-4 mr-2" />
-                  Сохранить изменения
-                </Button>
-              </div>
+              )}
             </Card>
           </TabsContent>
 
@@ -250,7 +346,7 @@ const Admin = () => {
             <Card className="p-6 bg-[#2A2F3C] border-[#8B7355]/20">
               <h2 className="text-xl font-semibold text-white mb-4">Управление портфолио</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {works.map((work, index) => (
+                {works.map((work) => (
                   <div key={work.id} className="relative group">
                     <div className="aspect-square bg-[#1A1F2C] rounded-lg overflow-hidden">
                       <img src={work.imageUrl} alt="" className="w-full h-full object-cover" />
