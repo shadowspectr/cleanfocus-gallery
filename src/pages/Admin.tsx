@@ -43,6 +43,7 @@ const Admin = () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error || !session) {
+          const email = prompt('Введите email для доступа в панель администратора:');
           const password = prompt('Введите пароль для доступа в панель администратора:');
           if (password === '012345') {
             const { error: signInError } = await supabase.auth.signInWithPassword({
