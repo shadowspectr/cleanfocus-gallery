@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,31 @@ const Admin = () => {
   const queryClient = useQueryClient();
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newService, setNewService] = useState<Omit<Service, 'id'>>({ name: "", price: "", time: "" });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          const password = prompt('Введите пароль для доступа в панель администратора:');
+          if (password === '012345') {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: 'admin@example.com',
+              password: '012345'
+            });
+            if (signInError) throw signInError;
+            localStorage.setItem('adminAuth', 'true');
+          } else {
+            navigate('/');
+          }
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        navigate('/');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
@@ -163,6 +189,16 @@ const Admin = () => {
     }
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Ошибка",
+          description: "Необходимо авторизоваться",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('portfolio')
@@ -201,6 +237,16 @@ const Admin = () => {
 
   const handleDeleteWork = async (id: string, image_url: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Ошибка",
+          description: "Необходимо авторизоваться",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const fileName = image_url.split('/').pop();
       
       if (fileName) {
@@ -234,22 +280,8 @@ const Admin = () => {
     }
   };
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const isAuth = localStorage.getItem('adminAuth');
-      if (!isAuth) {
-        const password = prompt('Введите пароль для доступа в панель администратора:');
-        if (password === '012345') {
-          localStorage.setItem('adminAuth', 'true');
-        } else {
-          navigate('/');
-        }
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('adminAuth');
     navigate('/');
   };
