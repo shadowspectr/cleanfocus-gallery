@@ -43,11 +43,11 @@ const Index = () => {
               <span className="font-display text-xl font-semibold text-white">Clean Pro</span>
             </div>
             <nav className="hidden md:flex space-x-8">
-              <a href="#services" className="text-[#D4B996] hover:text-mint-400 transition-colors">Услуги</a>
-              <a href="#portfolio" className="text-[#D4B996] hover:text-mint-400 transition-colors">Портфолио</a>
-              <a href="#contact" className="text-[#D4B996] hover:text-mint-400 transition-colors">Контакты</a>
+              <a href="#services" className="text-[#D4B996] hover:text-[#E5CAA7] transition-colors">Услуги</a>
+              <a href="#portfolio" className="text-[#D4B996] hover:text-[#E5CAA7] transition-colors">Портфолио</a>
+              <a href="#contact" className="text-[#D4B996] hover:text-[#E5CAA7] transition-colors">Контакты</a>
             </nav>
-            <Button className="bg-mint-500 hover:bg-mint-600 text-white">
+            <Button className="bg-[#8B7355] hover:bg-[#A08B6C] text-white">
               Заказать
             </Button>
           </div>
@@ -69,13 +69,13 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              className="bg-mint-500 text-white hover:bg-mint-600 transition-all duration-300"
+              className="bg-[#A08B6C] text-white hover:bg-[#B89D7D] transition-all duration-300"
             >
               Заказать химчистку
             </Button>
             <Button
               size="lg"
-              className="bg-[#8B7355] text-white hover:bg-[#A08B6C] border-2 border-[#D4B996]/20 shadow-lg transition-all duration-300"
+              className="bg-transparent text-white hover:bg-white/10 border-2 border-[#D4B996]/20 shadow-lg transition-all duration-300"
             >
               Узнать цены
             </Button>
@@ -111,10 +111,10 @@ const Index = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((_, index) => (
-              <Card key={index} className="overflow-hidden group border-mint-400/20 bg-[#2A2F3C]">
+              <Card key={index} className="overflow-hidden group border-[#8B7355]/20 bg-[#2A2F3C]">
                 <div className="relative aspect-square bg-[#2A2F3C] flex items-center justify-center">
-                  <Image className="w-12 h-12 text-mint-400" />
-                  <span className="absolute inset-0 bg-mint-500/0 group-hover:bg-mint-500/10 transition-colors duration-300" />
+                  <Image className="w-12 h-12 text-[#D4B996]" />
+                  <span className="absolute inset-0 bg-[#8B7355]/0 group-hover:bg-[#8B7355]/10 transition-colors duration-300" />
                 </div>
               </Card>
             ))}
